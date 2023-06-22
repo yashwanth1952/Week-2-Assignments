@@ -39,11 +39,84 @@
 
   Testing the server - run `npm run test-todoServer` command in terminal
  */
-const express = require('express');
-const bodyParser = require('body-parser');
+const express = require("express");
+const bodyParser = require("body-parser");
 
 const app = express();
 
 app.use(bodyParser.json());
 
 module.exports = app;
+
+const uuid = require("uuid").v4;
+let todosList = [];
+
+const getTodos = (req, res, next) => {
+  res.status(200).send(todosList);
+};
+
+const getTodo = (req, res, next) => {
+  const todoId = req.params.id;
+  const todo = todosList.filter((todo) => todo.id == todoId);
+  if (todo.length > 0) {
+    res.status(200).send(todo[0]);
+  }
+  res.status(404).send();
+};
+
+const postTodo = (req, res, next) => {
+  const newTodoId = uuid();
+  const newTodo = req.body;
+  todosList = [
+    ...todosList,
+    {
+      id: newTodoId,
+      title: newTodo.title,
+      completed: newTodo.completed,
+      description: newTodo.description,
+    },
+  ];
+  res.status(201).send({ id: newTodoId });
+};
+
+const putTodo = (req, res, next) => {
+  const todoId = req.params.id;
+  if (todosList.filter((todo) => todo.id == todoId).length === 0) {
+    res.status(404).send();
+  }
+  const updatedTodo = req.body;
+  todosList = todosList.map((todo) =>
+    todo.id == todoId
+      ? {
+          ...todo,
+          title: updatedTodo.title,
+          completed: updatedTodo.completed,
+        }
+      : todo
+  );
+  res.status(200).send();
+};
+
+const deleteTodo = (req, res, next) => {
+  const todoId = req.params.id;
+  const remainingTodos = todosList.filter(
+    (todo) => todo.id != todoId
+  );
+  if (todosList.length !== remainingTodos.length) {
+    todosList = remainingTodos;
+    res.status(200).send();
+  }
+  res.status(404).send();
+};
+
+app.get("/todos", getTodos);
+
+app.get("/todos/:id", getTodo);
+
+app.post("/todos", postTodo);
+
+app.put("/todos/:id", putTodo);
+
+app.delete("/todos/:id", deleteTodo);
+
+// app.listen(PORT, () => console.log("STARTED SERVER AT PORT"));
