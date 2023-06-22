@@ -29,9 +29,60 @@
   Testing the server - run `npm run test-authenticationServer` command in terminal
  */
 
-const express = require("express")
+const bodyParser = require("body-parser");
+const express = require("express");
 const PORT = 3000;
 const app = express();
 // write your logic here, DONT WRITE app.listen(3000) when you're running tests, the tests will automatically start the server
 
 module.exports = app;
+
+const uuid = require("uuid").v4;
+let usersList = [];
+
+const postSignup = (req, res, next) => {
+  const newUser = req.body;
+
+  if (
+    usersList.filter((user) => user.username === newUser.username)
+      .length > 0
+  ) {
+    res.status(400).send();
+    return;
+  }
+  usersList = [...usersList, { id: uuid(), ...newUser }];
+  res.status(201).send("Signup successful");
+};
+
+const postLogin = (req, res, next) => {
+  const userCredentials = req.body;
+  const temp = usersList.filter(
+    (user) =>
+      user.username === userCredentials.username &&
+      user.password === userCredentials.password
+  );
+  if (temp.length > 0) {
+    res.status(200).send({ token: uuid(), ...temp[0] });
+  }
+  res.status(401).send();
+};
+
+const getData = (req, res, next) => {
+  const userCredentials = req.headers;
+  if (
+    usersList.filter(
+      (user) =>
+        user.username === userCredentials.username &&
+        user.password === userCredentials.password
+    ).length > 0
+  ) {
+    res.status(200).send({ users: usersList });
+  }
+  res.status(401).send("Unauthorized");
+};
+app.use(bodyParser.json());
+app.post("/signup", postSignup);
+app.post("/login", postLogin);
+app.get("/data", getData);
+
+// app.listen(PORT, () => console.log("SERVER STARTED AT PORT"));
